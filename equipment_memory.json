@@ -1,0 +1,110 @@
+{
+  "loading computer | loading coumputer operating panel | lenovo | -": {
+    "system": "Loading Computer",
+    "component": "Loading Computer Loading Coumputer Operating Panel -",
+    "vendor": "Lenovo",
+    "model": "",
+    "is_cbs": true,
+    "function_class": "PROPULSION",
+    "in_scope": true,
+    "network_zone": "BRIDGE",
+    "connected_to_external": false,
+    "criteria": {
+      "safety_critical": true,
+      "environment_critical": true,
+      "operation_critical": true,
+      "networked_with_other_cbs": true,
+      "connected_to_untrusted": false
+    }
+  },
+  "water ingress alarm system | cpu core module | comfile technology | -": {
+    "system": "WATER INGRESS ALARM SYSTEM",
+    "component": "WATER INGRESS ALARM SYSTEM CPU CORE MODULE -",
+    "vendor": "COMFILE TECHNOLOGY",
+    "model": "",
+    "is_cbs": true,
+    "function_class": "PROPULSION",
+    "in_scope": true,
+    "network_zone": "BRIDGE",
+    "connected_to_external": false,
+    "criteria": {
+      "safety_critical": true,
+      "environment_critical": true,
+      "operation_critical": true,
+      "networked_with_other_cbs": true,
+      "connected_to_untrusted": false
+    }
+  },
+  "nan | nan | nan | nan": {
+    "system": "nan",
+    "component": "nan nan nan",
+    "vendor": "nan",
+    "model": "",
+    "is_cbs": false,
+    "function_class": "PROPULSION",
+    "in_scope": false,
+    "network_zone": "nan",
+    "connected_to_external": false,
+    "criteria": {
+      "safety_critical": true,
+      "environment_critical": true,
+      "operation_critical": true,
+      "networked_with_other_cbs": true,
+      "connected_to_untrusted": false
+    }
+  },
+  "system\nname | sw name | sw type | sw version": {
+    "system": "System\nName",
+    "component": "System\nName SW Name SW Version",
+    "vendor": "SW Type",
+    "model": "",
+    "is_cbs": true,
+    "function_class": "PROPULSION",
+    "in_scope": true,
+    "network_zone": "Installed HW Components",
+    "connected_to_external": false,
+    "criteria": {
+      "safety_critical": true,
+      "environment_critical": true,
+      "operation_critical": true,
+      "networked_with_other_cbs": true,
+      "connected_to_untrusted": false
+    }
+  },
+  "ias | abb os | application | 6.1.x": {
+    "system": "IAS",
+    "component": "IAS ABB OS 6.1.x",
+    "vendor": "Application",
+    "model": "",
+    "is_cbs": false,
+    "function_class": "PROPULSION",
+    "in_scope": false,
+    "network_zone": "OS PC",
+    "connected_to_external": false,
+    "criteria": {
+      "safety_critical": true,
+      "environment_critical": true,
+      "operation_critical": true,
+      "networked_with_other_cbs": true,
+      "connected_to_untrusted": false
+    }
+  },
+  "water ingress alarm system | wia-3000 operating program | application | v0": {
+    "system": "WATER INGRESS ALARM SYSTEM",
+    "component": "WATER INGRESS ALARM SYSTEM WIA-3000 OPERATING PROGRAM V0",
+    "vendor": "Application",
+    "model": "",
+    "is_cbs": true,
+    "function_class": "PROPULSION",
+    "in_scope": true,
+    "network_zone": "EMEBEED CONTROLLER",
+    "connected_to_external": false,
+    "criteria": {
+      "safety_critical": true,
+      "environment_critical": true,
+      "operation_critical": true,
+      "networked_with_other_cbs": true,
+      "connected_to_untrusted": false
+    }
+  }
+}

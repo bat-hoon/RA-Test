@@ -1,0 +1,42 @@
+{
+  "class_counts": {
+    "PROPULSION": 1
+  },
+  "token_counts": {
+    "PROPULSION": {
+      "main": 2,
+      "engine": 2,
+      "remote": 2,
+      "control": 3,
+      "system": 2,
+      "abc": 1,
+      "marine": 1,
+      "me": 1,
+      "and": 1,
+      "monitoring": 1,
+      "panel": 1,
+      "integrated": 1,
+      "with": 1,
+      "bridge": 1,
+      "propulsion": 1
+    }
+  },
+  "vocab": [
+    "engine",
+    "control",
+    "monitoring",
+    "remote",
+    "main",
+    "abc",
+    "bridge",
+    "system",
+    "panel",
+    "me",
+    "and",
+    "marine",
+    "propulsion",
+    "with",
+    "integrated"
+  ],
+  "total_samples": 1
+}
