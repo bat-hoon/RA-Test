@@ -590,7 +590,6 @@ class E26Classifier:
                 )
 
         # 5) Criteria 적용 & E26 대상 여부
-                # 5) Criteria 적용 & E26 대상 여부
         criteria_matches, criteria_score = self._apply_criteria(final_func, e)
         base_score = 0.0
         if is_cbs:
@@ -598,10 +597,10 @@ class E26Classifier:
         total_score = base_score + criteria_score
 
         # 이 임계값은 현재 경험 기반 가정(추측입니다)
-        in_scope = is_cbs and total_score >= 2.5
+        in_scope = bool(is_cbs and total_score >= 2.5)
         explanation_lines.append(
-            f"[Scope] base_score={base_score:.1f}, criteria_score={criteria_score:.1f}, total={total_score:.1f}, "
-            f"in_scope={in_scope}"
+            f"[Scope-ML] base_score={base_score:.1f}, criteria_score={criteria_score:.1f}, "
+            f"total={total_score:.1f}, in_scope={in_scope}"
         )
 
         # 먼저 결정 객체를 만들고
@@ -620,8 +619,174 @@ class E26Classifier:
         decision.explanation = build_human_explanation(e, decision)
 
         return decision
+    
+    def is_e26_in_scope_rec190(self, rec: dict) -> Tuple[bool, List[str]]:
+        """
+        UR E26 규정 기반 대상 CBS 판독 (Rec.190 입력 기준)
+        return: (in_scope, reasoning[])
+        """
+        reasons: List[str] = []
 
-    # ----- 사용자 피드백을 통한 학습 -----
+        # ----------------------------
+        # Rec.190 Column Keys (A~V)
+        # ----------------------------
+        KEY_ITEM_NO = "Item Number"
+        KEY_SHIP_FUNC = "Ship functions and systems"
+        KEY_SYSTEM = "System"
+        KEY_EQUIP = "Equipment"
+        KEY_SYS_CAT = "System category"
+        KEY_UID = "Unique Identifier"
+        KEY_OS = "Operating System (OS)"
+        KEY_FW = "Firmware"
+        KEY_SW = "Software and version"
+        KEY_ZONE = "Security zone"
+        KEY_PURPOSE = "Ship description of functionality/purpose"
+        KEY_CONN_SCOPE = "Connection to components and systems with the scope"
+        KEY_CONN_UNTRUST = "Connections to Untrusted networks"
+        KEY_EXCLUDED = "Excluded (if part of an excluded system in accordance with UR E26, Sec 6)"
+        KEY_UPDATE_LOG = "Update log"
+
+        # ----------------------------
+        # Step 0) Identify target row (optional context)
+        # ----------------------------
+        item_no = str(rec.get(KEY_ITEM_NO, "")).strip()
+        system_name = str(rec.get(KEY_SYSTEM, "")).strip()
+        equip_name = str(rec.get(KEY_EQUIP, "")).strip()
+        if item_no:
+            reasons.append(f"Item Number: {item_no}")
+        if system_name or equip_name:
+            reasons.append(f"Target: {system_name} / {equip_name}".strip(" /"))
+
+        # ----------------------------
+        # Step 1) Excluded system check (UR E26 Sec.6)
+        # Rec.190 Column U: mark "X" if excluded CBS
+        # ----------------------------
+        excluded_mark = str(rec.get(KEY_EXCLUDED, "")).strip().upper()
+        if excluded_mark == "X":
+            reasons.append("Excluded marked 'X' (UR E26 Sec.6) → OUT OF SCOPE")
+            return False, reasons
+
+        # ----------------------------
+        # Step 2) Determine CBS (computer-based system) using Rec.190 fields
+        # Practical rule: if OS/FW/SW exists, treat as CBS candidate.
+        # (This is a structured heuristic aligned with Rec.190 inventory intent.)
+        # ----------------------------
+        os_val = str(rec.get(KEY_OS, "")).strip()
+        fw_val = str(rec.get(KEY_FW, "")).strip()
+        sw_val = str(rec.get(KEY_SW, "")).strip()
+
+        has_os = bool(os_val)
+        has_fw = bool(fw_val)
+        has_sw = bool(sw_val)
+
+        if not (has_os or has_fw or has_sw):
+            reasons.append("No OS/Firmware/Software info → likely NOT CBS → OUT OF SCOPE")
+            return False, reasons
+
+        reasons.append("OS/Firmware/Software info present → CBS candidate")
+
+        # ----------------------------
+        # Step 3) System Category (UR E22 Cat I/II/III) from Rec.190 column E
+        # Most in scope: Category II or III (UR E26 scope principle)
+        # ----------------------------
+        cat_raw = str(rec.get(KEY_SYS_CAT, "")).strip().upper()
+
+        # Normalize common inputs: "II", "III", "I", "CATEGORY II", "CAT II" etc.
+        def _norm_cat(s: str) -> str:
+            s = s.replace("CATEGORY", "").replace("CAT.", "").replace("CAT", "").strip()
+            # allow "2"/"3"
+            if s == "2":
+                return "II"
+            if s == "3":
+                return "III"
+            if s == "1":
+                return "I"
+            return s
+
+        cat = _norm_cat(cat_raw)
+        if cat in ("I", "II", "III"):
+            reasons.append(f"System category: {cat}")
+        else:
+            reasons.append("System category not clearly provided")
+
+        # ----------------------------
+        # Step 4) Function/Purpose presence (scope-relevance indicator)
+        # Rec.190 provides two related fields: ship function/system and purpose description
+        # ----------------------------
+        ship_func = str(rec.get(KEY_SHIP_FUNC, "")).strip()
+        purpose = str(rec.get(KEY_PURPOSE, "")).strip()
+
+        has_mission_relevance_hint = bool(ship_func or purpose)
+        if has_mission_relevance_hint:
+            reasons.append("Ship function / purpose described")
+        else:
+            reasons.append("No ship function / purpose described (insufficient context)")
+
+        # ----------------------------
+        # Step 5) Connectivity indicators
+        # - Connection within scope (to other in-scope components/systems)
+        # - Connections to Untrusted networks (any network outside E26 scope)
+        # ----------------------------
+        conn_scope = str(rec.get(KEY_CONN_SCOPE, "")).strip()
+        conn_untrusted = str(rec.get(KEY_CONN_UNTRUST, "")).strip()
+
+        has_conn_scope = bool(conn_scope)
+        has_conn_untrusted = bool(conn_untrusted)
+
+        if has_conn_scope:
+            reasons.append("Has connections to in-scope components/systems")
+        if has_conn_untrusted:
+            reasons.append("Has connections to untrusted networks")
+        if not (has_conn_scope or has_conn_untrusted):
+            reasons.append("No connectivity info provided")
+
+        # ----------------------------
+        # Step 6) Unique Identifier requirement (UR E22 Cat II/III)
+        # - Not a hard OUT rule here; but add warning if missing
+        # ----------------------------
+        uid = str(rec.get(KEY_UID, "")).strip()
+        if cat in ("II", "III") and not uid:
+            reasons.append("Warning: Cat II/III but Unique Identifier is empty (UR E22 4.2.2 / 7.1.1 reference)")
+        elif uid:
+            reasons.append("Unique Identifier provided")
+
+        # ----------------------------
+        # Final Decision (regulation-aligned decision tree)
+        #
+        # Conservative, audit-friendly logic:
+        # 1) Excluded X => OUT (already returned)
+        # 2) Not CBS => OUT (already returned)
+        # 3) If Cat II/III => IN (even if purpose missing, still likely in-scope; log reason)
+        # 4) If Cat I => default OUT, but if there is connectivity (esp. untrusted or in-scope link) => IN (needs review)
+        # 5) If category unknown => fallback based on connectivity + purpose (review-needed)
+        # ----------------------------
+
+        # Case A: Category II/III
+        if cat in ("II", "III"):
+            reasons.append("Category II/III → IN SCOPE (UR E26 applicability baseline)")
+            return True, reasons
+
+        # Case B: Category I
+        if cat == "I":
+            if has_conn_scope or has_conn_untrusted:
+                reasons.append("Category I but connectivity exists → IN SCOPE (review recommended)")
+                return True, reasons
+            reasons.append("Category I with no connectivity → OUT OF SCOPE")
+            return False, reasons
+
+        # Case C: Category not defined/unknown
+        # Fallback: if untrusted connectivity or in-scope links exist -> include (review)
+        # else if purpose described & CBS -> include (review) or exclude? We'll be conservative:
+        if has_conn_untrusted or has_conn_scope:
+            reasons.append("Category unknown but connectivity exists → IN SCOPE (review recommended)")
+            return True, reasons
+
+        if has_mission_relevance_hint:
+            reasons.append("Category unknown but purpose/function described → IN SCOPE (review recommended)")
+            return True, reasons
+
+        reasons.append("Category unknown and no connectivity/purpose info → OUT OF SCOPE (insufficient evidence)")
+        return False, reasons
 
     def feedback(
         self,
